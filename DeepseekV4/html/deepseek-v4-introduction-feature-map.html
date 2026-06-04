@@ -1,0 +1,2400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeepSeek-V4 Introduction 解读</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ===========================================
+       CSS CUSTOM PROPERTIES: SIGNAL TEMPLATE ADAPTATION
+       =========================================== */
+    :root {
+      --bg-primary: #1c2644;
+      --bg-secondary: #232f55;
+      --bg-light: #f0ece3;
+      --panel: rgba(35, 47, 85, 0.62);
+      --panel-strong: rgba(35, 47, 85, 0.92);
+      --panel-soft: rgba(200, 168, 112, 0.08);
+      --text-primary: #e2dcd0;
+      --text-secondary: #b9c0c6;
+      --text-muted: #8a96a8;
+      --text-hint: #4e5a6e;
+      --accent-cyan: #c8a870;
+      --accent-blue: #c8a870;
+      --accent-magenta: #c8a870;
+      --accent-amber: #c8a870;
+      --accent-green: #c8a870;
+      --line: #2e3d5c;
+      --line-strong: rgba(200, 168, 112, 0.7);
+      --shadow: transparent;
+      --font-display: "Source Serif 4", "Noto Sans SC", Georgia, serif;
+      --font-body: "DM Sans", "Noto Sans SC", system-ui, sans-serif;
+      --font-mono: "IBM Plex Mono", "Noto Sans SC", monospace;
+      --title-size: clamp(2.1rem, 5.4vw, 5rem);
+      --h2-size: clamp(1.38rem, 3.35vw, 2.75rem);
+      --h3-size: clamp(0.95rem, 1.75vw, 1.25rem);
+      --body-size: clamp(0.72rem, 1.08vw, 0.98rem);
+      --small-size: clamp(0.58rem, 0.78vw, 0.75rem);
+      --nav-size: clamp(0.58rem, 0.88vw, 0.76rem);
+      --slide-padding: clamp(1.2rem, 4.6vw, 4.6rem);
+      --content-gap: clamp(0.75rem, 1.9vw, 1.8rem);
+      --element-gap: clamp(0.42rem, 0.95vw, 0.86rem);
+      --radius: 0;
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --duration-normal: 0.7s;
+    }
+
+    /* ===========================================
+       RESET AND VIEWPORT BASE
+       Full viewport-base.css contents included.
+       =========================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+        height: 100%;
+        overflow-x: hidden;
+    }
+
+    html {
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+    }
+
+    .slide {
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+        scroll-snap-align: start;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    .slide-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        max-height: 100%;
+        overflow: hidden;
+        padding: var(--slide-padding);
+        padding-left: calc(var(--slide-padding) + clamp(12rem, 18vw, 16rem));
+    }
+
+    :root {
+        --title-size: clamp(1.5rem, 5vw, 4rem);
+        --h2-size: clamp(1.38rem, 3.35vw, 2.75rem);
+        --h3-size: clamp(0.95rem, 1.75vw, 1.25rem);
+        --body-size: clamp(0.72rem, 1.08vw, 0.98rem);
+        --small-size: clamp(0.58rem, 0.78vw, 0.75rem);
+        --slide-padding: clamp(1.2rem, 4.6vw, 4.6rem);
+        --content-gap: clamp(0.75rem, 1.9vw, 1.8rem);
+        --element-gap: clamp(0.42rem, 0.95vw, 0.86rem);
+    }
+
+    .card, .container, .content-box {
+        max-width: min(90vw, 1000px);
+        max-height: min(80vh, 700px);
+    }
+
+    .feature-list, .bullet-list {
+        gap: clamp(0.4rem, 1vh, 1rem);
+    }
+
+    .feature-list li, .bullet-list li {
+        font-size: var(--body-size);
+        line-height: 1.4;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+        gap: clamp(0.5rem, 1.5vw, 1rem);
+    }
+
+    img, .image-container {
+        max-width: 100%;
+        max-height: min(50vh, 400px);
+        object-fit: contain;
+    }
+
+    @media (max-height: 700px) {
+        :root {
+            --slide-padding: clamp(0.75rem, 3vw, 2rem);
+            --content-gap: clamp(0.4rem, 1.5vw, 1rem);
+            --title-size: clamp(1.25rem, 4.5vw, 2.5rem);
+            --h2-size: clamp(1rem, 3vw, 1.75rem);
+        }
+    }
+
+    @media (max-height: 600px) {
+        :root {
+            --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
+            --content-gap: clamp(0.3rem, 1vw, 0.75rem);
+            --title-size: clamp(1.1rem, 4vw, 2rem);
+            --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
+        }
+
+        .nav-dots, .keyboard-hint, .decorative {
+            display: none;
+        }
+    }
+
+    @media (max-height: 500px) {
+        :root {
+            --slide-padding: clamp(0.4rem, 2vw, 1rem);
+            --title-size: clamp(1rem, 3.5vw, 1.5rem);
+            --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
+            --body-size: clamp(0.65rem, 1vw, 0.85rem);
+        }
+    }
+
+    @media (max-width: 600px) {
+        :root {
+            --title-size: clamp(1.25rem, 7vw, 2.5rem);
+        }
+
+        .grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.2s !important;
+        }
+
+        html {
+            scroll-behavior: auto;
+        }
+    }
+
+    /* ===========================================
+       GLOBAL THEME
+       =========================================== */
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: var(--bg-primary);
+      z-index: -2;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 80px 80px;
+      z-index: -1;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .slide::before {
+      content: attr(data-kicker);
+      position: absolute;
+      top: clamp(0.75rem, 2vw, 1.7rem);
+      left: calc(var(--slide-padding) + clamp(12rem, 18vw, 16rem));
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: var(--small-size);
+      letter-spacing: clamp(0.04rem, 0.16vw, 0.12rem);
+      text-transform: uppercase;
+      opacity: 0.78;
+    }
+
+    .slide::after {
+      content: attr(data-page);
+      position: absolute;
+      right: var(--slide-padding);
+      bottom: clamp(0.7rem, 1.8vw, 1.4rem);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: var(--small-size);
+      letter-spacing: clamp(0.08rem, 0.28vw, 0.22rem);
+    }
+
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: min(88vw, 1100px);
+      font-size: var(--title-size);
+      text-shadow: none;
+    }
+
+    h2 {
+      font-size: var(--h2-size);
+      color: var(--text-primary);
+    }
+
+    h3 {
+      font-size: var(--h3-size);
+      color: var(--accent-cyan);
+    }
+
+    p, li {
+      color: var(--text-secondary);
+      font-size: var(--body-size);
+      line-height: 1.72;
+    }
+
+    .subtitle {
+      max-width: min(86vw, 900px);
+      color: var(--text-secondary);
+      font-size: clamp(0.86rem, 1.6vw, 1.25rem);
+      line-height: 1.55;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: clamp(0.4rem, 1vw, 0.8rem);
+      color: var(--accent-amber);
+      font-family: var(--font-mono);
+      font-size: var(--small-size);
+      letter-spacing: clamp(0.04rem, 0.16vw, 0.12rem);
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: clamp(1.6rem, 4vw, 3.2rem);
+      height: 1px;
+      background: var(--accent-amber);
+      box-shadow: none;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(clamp(1rem, 3vw, 2rem));
+      transition:
+        opacity var(--duration-normal) var(--ease-out-expo),
+        transform var(--duration-normal) var(--ease-out-expo),
+        filter var(--duration-normal) var(--ease-out-expo);
+      filter: blur(clamp(0.08rem, 0.22vw, 0.2rem));
+    }
+
+    .slide.visible .reveal {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+
+    .reveal:nth-child(2) { transition-delay: 0.08s; }
+    .reveal:nth-child(3) { transition-delay: 0.16s; }
+    .reveal:nth-child(4) { transition-delay: 0.24s; }
+    .reveal:nth-child(5) { transition-delay: 0.32s; }
+
+    /* ===========================================
+       NAVIGATION
+       =========================================== */
+    .jump-nav {
+      --sidebar-width: clamp(12rem, 18vw, 16rem);
+      position: fixed;
+      z-index: 20;
+      top: clamp(0.7rem, 1.4vw, 1.1rem);
+      left: clamp(0.7rem, 1.4vw, 1.1rem);
+      bottom: clamp(0.7rem, 1.4vw, 1.1rem);
+      width: var(--sidebar-width);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.22rem, 0.45vw, 0.36rem);
+      padding: clamp(0.65rem, 1.15vw, 0.95rem);
+      border: 1px solid var(--line);
+      background: rgba(28, 38, 68, 0.88);
+      backdrop-filter: blur(clamp(0.4rem, 1vw, 0.8rem));
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent-cyan) transparent;
+    }
+
+    .nav-title {
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-size: clamp(1rem, 1.6vw, 1.35rem);
+      line-height: 1;
+      padding-bottom: clamp(0.45rem, 0.85vw, 0.7rem);
+      border-bottom: 1px solid var(--line);
+      margin-bottom: clamp(0.25rem, 0.55vw, 0.45rem);
+    }
+
+    .nav-section {
+      margin-top: clamp(0.35rem, 0.7vw, 0.55rem);
+      border-top: 1px solid var(--line);
+      padding-top: clamp(0.26rem, 0.55vw, 0.42rem);
+    }
+
+    .nav-section summary {
+      cursor: pointer;
+      list-style: none;
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: clamp(0.5rem, 0.72vw, 0.66rem);
+      letter-spacing: 0.08em;
+      padding: clamp(0.26rem, 0.55vw, 0.42rem) clamp(0.38rem, 0.75vw, 0.62rem);
+      user-select: none;
+    }
+
+    .nav-section summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .nav-section summary::before {
+      content: "+";
+      display: inline-block;
+      width: 1.2em;
+      color: var(--text-muted);
+    }
+
+    .nav-section[open] summary::before {
+      content: "-";
+    }
+
+    .nav-section a {
+      display: block;
+      margin-left: clamp(0.45rem, 0.9vw, 0.7rem);
+    }
+
+    .jump-nav a {
+      border: 1px solid transparent;
+      border-radius: 0;
+      padding: clamp(0.26rem, 0.55vw, 0.42rem) clamp(0.38rem, 0.75vw, 0.62rem);
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: clamp(0.5rem, 0.7vw, 0.66rem);
+      line-height: 1.25;
+      letter-spacing: 0.02em;
+      transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+    }
+
+    .jump-nav a:hover,
+    .jump-nav a.active {
+      color: var(--text-primary);
+      border-color: var(--accent-cyan);
+      background: rgba(200, 168, 112, 0.1);
+    }
+
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 30;
+      height: clamp(0.14rem, 0.32vw, 0.22rem);
+      width: 0%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 clamp(0.7rem, 1.4vw, 1rem) var(--shadow);
+    }
+
+    .keyboard-hint {
+      position: fixed;
+      left: calc(clamp(0.7rem, 2vw, 1.4rem) + clamp(12rem, 18vw, 16rem));
+      bottom: clamp(0.7rem, 1.8vw, 1.4rem);
+      z-index: 20;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: var(--small-size);
+      letter-spacing: clamp(0.05rem, 0.18vw, 0.13rem);
+    }
+
+    /* ===========================================
+       COMPONENTS
+       =========================================== */
+    .hero-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: clamp(1rem, 3vw, 2.4rem);
+      align-items: center;
+      max-height: min(78vh, 760px);
+    }
+
+    .hero-stack,
+    .section-stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--content-gap);
+    }
+
+    .stat-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(35, 47, 85, 0.36);
+      padding: clamp(0.8rem, 2vw, 1.5rem);
+      box-shadow: none;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(0.55rem, 1.3vw, 1rem);
+    }
+
+    .metric {
+      min-height: clamp(5.4rem, 13vh, 8rem);
+      border-top: 1px solid var(--line);
+      border-right: 0;
+      border-bottom: 0;
+      border-left: 0;
+      border-radius: 0;
+      padding: clamp(0.6rem, 1.3vw, 1rem);
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: clamp(0.35rem, 0.8vw, 0.7rem);
+    }
+
+    .metric strong {
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-size: clamp(1.35rem, 3.4vw, 2.8rem);
+      font-weight: 600;
+      line-height: 0.9;
+    }
+
+    .metric span {
+      color: var(--text-secondary);
+      font-size: var(--small-size);
+      line-height: 1.35;
+    }
+
+    .product-grid,
+    .strategy-grid,
+    .benchmark-grid {
+      display: grid;
+      gap: clamp(0.65rem, 1.4vw, 1rem);
+    }
+
+    .product-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mode-diagram {
+      display: grid;
+      grid-template-columns: 0.72fr repeat(3, minmax(0, 1fr));
+      gap: clamp(0.5rem, 1vw, 0.8rem);
+      align-items: stretch;
+    }
+
+    .mode-label,
+    .model-label,
+    .mode-cell {
+      border: 1px solid var(--line);
+      padding: clamp(0.55rem, 1.1vw, 0.86rem);
+      min-height: clamp(4.8rem, 12vh, 7rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: clamp(0.2rem, 0.5vw, 0.4rem);
+    }
+
+    .mode-label {
+      border-top-color: var(--line-strong);
+      background: var(--bg-light);
+      color: var(--c-fg-light, #1a2030);
+    }
+
+    .mode-label strong,
+    .model-label strong,
+    .mode-cell strong {
+      font-family: var(--font-display);
+      font-size: clamp(0.95rem, 1.7vw, 1.28rem);
+      font-weight: 600;
+      line-height: 1.15;
+    }
+
+    .mode-label span,
+    .model-label span,
+    .mode-cell span {
+      color: var(--text-secondary);
+      font-size: var(--small-size);
+      line-height: 1.35;
+    }
+
+    .mode-label span {
+      color: var(--c-fg-light-2, #5a6270);
+    }
+
+    .model-label {
+      border-color: var(--line-strong);
+      background: rgba(35, 47, 85, 0.42);
+    }
+
+    .mode-cell {
+      background: rgba(35, 47, 85, 0.28);
+    }
+
+    .mode-cell::before {
+      content: "✓";
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: clamp(0.8rem, 1.2vw, 1rem);
+    }
+
+    .strategy-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .benchmark-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .explain-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(0.62rem, 1.25vw, 0.95rem);
+    }
+
+    .explain-card {
+      border: 1px solid var(--line);
+      border-top-color: var(--line-strong);
+      background: rgba(35, 47, 85, 0.42);
+      padding: clamp(0.65rem, 1.25vw, 0.95rem);
+      min-height: clamp(5.2rem, 13vh, 8rem);
+    }
+
+    .explain-card:target {
+      border-color: var(--accent-cyan);
+      background: rgba(200, 168, 112, 0.1);
+    }
+
+    .explain-card h3 {
+      margin-bottom: clamp(0.26rem, 0.65vw, 0.5rem);
+    }
+
+    .explain-card p {
+      font-size: clamp(0.68rem, 1vw, 0.92rem);
+    }
+
+    .feature-card,
+    .strategy-card,
+    .bench-card,
+    .explain-card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      border-top-color: var(--line-strong);
+      background: rgba(35, 47, 85, 0.38);
+      padding: clamp(0.72rem, 1.5vw, 1.15rem);
+      min-height: clamp(7rem, 17vh, 11rem);
+    }
+
+    .feature-card::before,
+    .strategy-card::before,
+    .bench-card::before,
+    .explain-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 0%, rgba(200, 168, 112, 0.08) 45%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform 0.65s var(--ease-out-expo);
+    }
+
+    .feature-card:hover::before,
+    .strategy-card:hover::before,
+    .bench-card:hover::before,
+    .explain-card:hover::before {
+      transform: translateX(100%);
+    }
+
+    .feature-card h3,
+    .strategy-card h3,
+    .bench-card h3,
+    .explain-card h3 {
+      margin-bottom: clamp(0.35rem, 0.8vw, 0.65rem);
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(0.3rem, 0.7vw, 0.5rem);
+      margin-top: clamp(0.45rem, 1vw, 0.8rem);
+    }
+
+    .tag {
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-color: var(--accent-amber);
+      border-radius: 0;
+      padding: clamp(0.18rem, 0.45vw, 0.32rem) clamp(0.42rem, 0.8vw, 0.62rem);
+      color: var(--accent-amber);
+      font-family: var(--font-mono);
+      font-size: var(--small-size);
+      letter-spacing: clamp(0.03rem, 0.12vw, 0.1rem);
+      background: transparent;
+    }
+
+    .relation-map {
+      display: grid;
+      grid-template-columns: minmax(0, 1.42fr) minmax(0, 0.58fr);
+      gap: clamp(0.8rem, 2vw, 1.6rem);
+      align-items: stretch;
+    }
+
+    .flow-board {
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      padding: clamp(1.25rem, 2.6vw, 2rem) clamp(1rem, 2vw, 1.55rem) clamp(0.85rem, 1.8vw, 1.35rem);
+      background:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+        rgba(35, 47, 85, 0.28);
+      background-size: 40px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.55rem, 1.1vw, 0.85rem);
+      min-height: clamp(18rem, 54vh, 30rem);
+      position: relative;
+    }
+
+    .diagram-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--element-gap);
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: clamp(0.54rem, 0.78vw, 0.72rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: clamp(0.35rem, 0.8vw, 0.6rem);
+    }
+
+    .diagram-title span:last-child {
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .chapter-flow {
+      display: grid;
+      grid-template-columns: 1.05fr auto 1.05fr auto 1.05fr auto 1.2fr;
+      align-items: stretch;
+      gap: clamp(0.42rem, 0.85vw, 0.7rem);
+      flex: 1;
+      min-height: 0;
+    }
+
+    .node {
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: rgba(28, 38, 68, 0.8);
+      padding: clamp(0.56rem, 1vw, 0.86rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: clamp(0.22rem, 0.55vw, 0.45rem);
+      z-index: 2;
+      position: relative;
+      min-height: clamp(8.8rem, 25vh, 14rem);
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .node:hover {
+      transform: translateY(calc(-1 * clamp(0.08rem, 0.25vw, 0.16rem)));
+      border-color: var(--accent-cyan);
+      background: rgba(35, 47, 85, 0.96);
+    }
+
+    .node::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent-cyan);
+      opacity: 0.8;
+    }
+
+    .node strong {
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-size: clamp(0.95rem, 1.9vw, 1.45rem);
+      font-weight: 400;
+    }
+
+    .node span {
+      color: var(--text-secondary);
+      font-size: var(--small-size);
+      line-height: 1.35;
+    }
+
+    .node.problem,
+    .node.arch,
+    .node.infra {
+      border-color: var(--line-strong);
+    }
+
+    .node.problem {
+      background: rgba(28, 38, 68, 0.92);
+    }
+
+    .node.pre,
+    .node.post {
+      border-color: var(--c-border-light, #cac4b4);
+      background: var(--bg-light);
+      color: var(--c-fg-light, #1a2030);
+    }
+
+    .node.pre:hover,
+    .node.post:hover {
+      background: #e6e0d4;
+      border-color: var(--accent-cyan);
+    }
+
+    .node.pre strong,
+    .node.post strong {
+      color: var(--c-fg-light, #1a2030);
+    }
+
+    .node.pre span,
+    .node.post span {
+      color: var(--c-fg-light-2, #5a6270);
+    }
+
+    .flow-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: clamp(1rem, 2vw, 1.7rem);
+      min-width: clamp(1rem, 1.8vw, 1.6rem);
+    }
+
+    .evidence-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: clamp(0.42rem, 0.85vw, 0.7rem);
+    }
+
+    .evidence {
+      border-top: 1px solid var(--line);
+      padding-top: clamp(0.36rem, 0.8vw, 0.55rem);
+      color: var(--text-muted);
+      font-size: clamp(0.56rem, 0.78vw, 0.72rem);
+      line-height: 1.4;
+    }
+
+    .evidence strong {
+      display: block;
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-weight: 500;
+      margin-bottom: 0.15rem;
+    }
+
+    .infra-foundation {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: clamp(0.55rem, 1.2vw, 0.9rem);
+      border: 1px solid var(--line);
+      background: rgba(35, 47, 85, 0.46);
+      padding: clamp(0.52rem, 1vw, 0.78rem);
+    }
+
+    .infra-foundation strong {
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: clamp(0.64rem, 0.9vw, 0.82rem);
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    .infra-foundation span {
+      color: var(--text-secondary);
+      font-size: var(--small-size);
+      line-height: 1.42;
+    }
+
+    .relation-copy {
+      display: flex;
+      flex-direction: column;
+      gap: var(--element-gap);
+    }
+
+    .callout {
+      border-left: clamp(0.18rem, 0.45vw, 0.34rem) solid var(--accent-cyan);
+      padding: clamp(0.55rem, 1.2vw, 0.9rem);
+      background: rgba(200, 168, 112, 0.07);
+      border-radius: 0;
+    }
+
+    .problem-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(0.55rem, 1.2vw, 0.9rem);
+    }
+
+    .problem {
+      padding: clamp(0.55rem, 1.2vw, 0.9rem);
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .problem strong {
+      display: block;
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-size: clamp(0.95rem, 1.6vw, 1.25rem);
+      font-weight: 400;
+      margin-bottom: clamp(0.25rem, 0.6vw, 0.45rem);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: var(--content-gap);
+      margin-bottom: var(--content-gap);
+    }
+
+    .section-header p {
+      max-width: min(42vw, 560px);
+      text-align: right;
+    }
+
+    .footer-note {
+      color: var(--text-muted);
+      font-size: var(--small-size);
+    }
+
+
+    .feature-detail {
+      max-width: min(70vw, 900px);
+      display: flex;
+      flex-direction: column;
+      gap: var(--content-gap);
+      border-left: 3px solid var(--accent-cyan);
+      padding-left: clamp(1rem, 2.2vw, 1.8rem);
+    }
+
+    .feature-sentence {
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-size: clamp(1.2rem, 2.6vw, 2.25rem);
+      line-height: 1.38;
+      max-width: min(64vw, 860px);
+    }
+
+    .feature-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(0.35rem, 0.75vw, 0.6rem);
+    }
+
+    .feature-detail-wide {
+      max-width: min(74vw, 1080px);
+    }
+
+    .grm-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+      gap: clamp(0.7rem, 1.6vw, 1.25rem);
+      align-items: stretch;
+    }
+
+    .mini-flow,
+    .example-box {
+      border: 1px solid var(--line);
+      border-top-color: var(--line-strong);
+      padding: clamp(0.65rem, 1.2vw, 0.9rem);
+      background: rgba(35, 47, 85, 0.38);
+    }
+
+    .mini-flow {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      gap: clamp(0.32rem, 0.7vw, 0.55rem);
+      align-items: center;
+    }
+
+    .mini-step {
+      min-height: clamp(4.2rem, 11vh, 6rem);
+      border: 1px solid var(--line);
+      padding: clamp(0.45rem, 0.85vw, 0.65rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: clamp(0.16rem, 0.4vw, 0.3rem);
+    }
+
+    .mini-step strong,
+    .example-box strong {
+      color: var(--accent-cyan);
+      font-family: var(--font-display);
+      font-size: clamp(0.85rem, 1.35vw, 1.08rem);
+      font-weight: 600;
+    }
+
+    .mini-step span,
+    .example-box p {
+      color: var(--text-secondary);
+      font-size: clamp(0.62rem, 0.92vw, 0.84rem);
+      line-height: 1.48;
+    }
+
+    .mini-arrow {
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: clamp(0.95rem, 1.5vw, 1.25rem);
+    }
+
+    .trajectory-box {
+      border: 1px solid var(--line);
+      border-top-color: var(--line-strong);
+      background: rgba(28, 38, 68, 0.52);
+      padding: clamp(0.62rem, 1.1vw, 0.86rem);
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: clamp(0.42rem, 0.8vw, 0.62rem);
+    }
+
+    .trajectory-step {
+      border-left: 1px solid var(--line);
+      padding-left: clamp(0.42rem, 0.8vw, 0.62rem);
+    }
+
+    .trajectory-step strong {
+      display: block;
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: clamp(0.54rem, 0.74vw, 0.68rem);
+      letter-spacing: 0.04em;
+      margin-bottom: 0.2rem;
+    }
+
+    .trajectory-step span {
+      color: var(--text-secondary);
+      font-size: clamp(0.58rem, 0.82vw, 0.76rem);
+      line-height: 1.42;
+    }
+
+    .rl-example {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: clamp(0.65rem, 1.25vw, 0.95rem);
+      border: 1px solid var(--line);
+      border-top-color: var(--line-strong);
+      background: rgba(35, 47, 85, 0.36);
+      padding: clamp(0.65rem, 1.15vw, 0.9rem);
+    }
+
+    .rl-example div {
+      border-left: 1px solid var(--line);
+      padding-left: clamp(0.5rem, 0.9vw, 0.7rem);
+    }
+
+    .rl-example strong {
+      display: block;
+      color: var(--accent-cyan);
+      font-family: var(--font-display);
+      font-size: clamp(0.9rem, 1.35vw, 1.1rem);
+      margin-bottom: 0.25rem;
+    }
+
+    .rl-example p {
+      font-size: clamp(0.62rem, 0.92vw, 0.82rem);
+      line-height: 1.5;
+    }
+
+    .opd-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: clamp(0.65rem, 1.25vw, 0.95rem);
+    }
+
+    .opd-box {
+      border: 1px solid var(--line);
+      border-top-color: var(--line-strong);
+      background: rgba(35, 47, 85, 0.38);
+      padding: clamp(0.65rem, 1.15vw, 0.9rem);
+    }
+
+    .opd-box strong {
+      display: block;
+      color: var(--accent-cyan);
+      font-family: var(--font-display);
+      font-size: clamp(0.9rem, 1.35vw, 1.1rem);
+      margin-bottom: 0.28rem;
+    }
+
+    .opd-box p {
+      font-size: clamp(0.62rem, 0.92vw, 0.82rem);
+      line-height: 1.5;
+    }
+
+    .dist-row {
+      display: grid;
+      grid-template-columns: 0.65fr repeat(4, 1fr);
+      gap: 0.25rem;
+      margin-top: 0.55rem;
+      font-family: var(--font-mono);
+      font-size: clamp(0.5rem, 0.72vw, 0.66rem);
+      color: var(--text-secondary);
+    }
+
+    .dist-row span {
+      border: 1px solid var(--line);
+      padding: 0.28rem;
+      text-align: center;
+    }
+
+    .dist-row .hot {
+      color: var(--bg-light);
+      border-color: var(--accent-cyan);
+      background: rgba(200, 168, 112, 0.22);
+    }
+
+    .compression-diagram {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(0.7rem, 1.4vw, 1.1rem);
+    }
+
+    .compression-panel {
+      border: 1px solid var(--line);
+      border-top-color: var(--line-strong);
+      background: rgba(35, 47, 85, 0.4);
+      padding: clamp(0.65rem, 1.15vw, 0.9rem);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.45rem, 0.9vw, 0.7rem);
+    }
+
+    .token-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(0.18rem, 0.42vw, 0.32rem);
+      align-items: center;
+    }
+
+    .token {
+      border: 1px solid var(--line);
+      min-width: clamp(1.5rem, 2.4vw, 2rem);
+      height: clamp(1.35rem, 2vw, 1.75rem);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: clamp(0.5rem, 0.72vw, 0.66rem);
+      background: rgba(28, 38, 68, 0.75);
+    }
+
+    .token.comp {
+      border-color: var(--accent-cyan);
+      color: var(--bg-light);
+      background: rgba(200, 168, 112, 0.22);
+      min-width: clamp(2.2rem, 3.5vw, 3rem);
+    }
+
+    .compress-arrow {
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: clamp(0.85rem, 1.3vw, 1.05rem);
+    }
+
+    .compression-panel p {
+      font-size: clamp(0.62rem, 0.92vw, 0.82rem);
+      line-height: 1.48;
+    }
+
+    .residual-compare {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(0.7rem, 1.4vw, 1.05rem);
+    }
+
+    .residual-panel {
+      border: 1px solid var(--line);
+      border-top-color: var(--line-strong);
+      background: rgba(35, 47, 85, 0.38);
+      padding: clamp(0.65rem, 1.15vw, 0.9rem);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.45rem, 0.85vw, 0.65rem);
+    }
+
+    .residual-panel h3 {
+      margin: 0;
+    }
+
+    .resnet-line,
+    .hyper-streams {
+      border: 1px solid var(--line);
+      padding: clamp(0.55rem, 1vw, 0.8rem);
+      min-height: clamp(5.4rem, 13vh, 7.5rem);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.32rem, 0.75vw, 0.55rem);
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
+      font-size: clamp(0.54rem, 0.78vw, 0.72rem);
+    }
+
+    .res-block,
+    .stream-box {
+      border: 1px solid var(--accent-cyan);
+      padding: clamp(0.28rem, 0.6vw, 0.42rem);
+      color: var(--bg-light);
+      background: rgba(200, 168, 112, 0.18);
+      text-align: center;
+    }
+
+    .skip-arc {
+      color: var(--accent-cyan);
+      white-space: nowrap;
+    }
+
+    .hyper-streams {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .stream-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: clamp(0.22rem, 0.5vw, 0.38rem);
+      align-items: center;
+    }
+
+    .mix-row {
+      color: var(--accent-cyan);
+      text-align: center;
+      border-top: 1px dashed var(--line);
+      border-bottom: 1px dashed var(--line);
+      padding: clamp(0.2rem, 0.45vw, 0.32rem);
+    }
+
+    .residual-panel p {
+      font-size: clamp(0.62rem, 0.92vw, 0.82rem);
+      line-height: 1.48;
+    }
+
+    .mhc-detail {
+      gap: clamp(0.45rem, 1vw, 0.8rem);
+    }
+
+    .mhc-detail .feature-sentence {
+      font-family: var(--font-body);
+      font-size: clamp(0.68rem, 1.05vw, 0.95rem);
+      line-height: 1.55;
+      max-width: min(72vw, 980px);
+    }
+
+    .mhc-detail .residual-panel {
+      background: rgba(35, 47, 85, 0.62);
+      padding: clamp(0.52rem, 0.95vw, 0.72rem);
+      gap: clamp(0.32rem, 0.7vw, 0.5rem);
+    }
+
+    .mhc-detail .resnet-line,
+    .mhc-detail .hyper-streams {
+      min-height: clamp(4.2rem, 9vh, 5.8rem);
+      background: rgba(28, 38, 68, 0.72);
+    }
+
+    .mhc-detail .res-block,
+    .mhc-detail .stream-box {
+      background: rgba(200, 168, 112, 0.28);
+      color: var(--text-primary);
+    }
+
+    .infra-diagram {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(0.55rem, 1vw, 0.8rem);
+      margin-bottom: var(--content-gap);
+      border: 1px solid var(--line);
+      border-top-color: var(--line-strong);
+      padding: clamp(0.65rem, 1.2vw, 0.95rem);
+      background:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+        rgba(35, 47, 85, 0.3);
+      background-size: 40px 40px;
+    }
+
+    .infra-layer {
+      border: 1px solid var(--line);
+      padding: clamp(0.55rem, 1vw, 0.8rem);
+      min-height: clamp(5rem, 12vh, 7rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: clamp(0.2rem, 0.5vw, 0.38rem);
+      position: relative;
+    }
+
+    .infra-layer::after {
+      content: "→";
+      position: absolute;
+      right: calc(-1 * clamp(0.75rem, 1.35vw, 1rem));
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: clamp(1rem, 1.8vw, 1.4rem);
+    }
+
+    .infra-layer:last-child::after {
+      content: "";
+    }
+
+    .infra-layer strong {
+      color: var(--accent-cyan);
+      font-family: var(--font-display);
+      font-size: clamp(0.95rem, 1.45vw, 1.2rem);
+      font-weight: 600;
+    }
+
+    .infra-layer span {
+      color: var(--text-secondary);
+      font-size: var(--small-size);
+      line-height: 1.4;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(0.65rem, 1.3vw, 1rem);
+    }
+
+    .compare-card {
+      border: 1px solid var(--line);
+      border-top-color: var(--line-strong);
+      background: rgba(35, 47, 85, 0.38);
+      padding: clamp(0.72rem, 1.4vw, 1rem);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.45rem, 0.9vw, 0.7rem);
+      min-height: clamp(15rem, 42vh, 23rem);
+    }
+
+    .compare-card h3 {
+      color: var(--accent-cyan);
+    }
+
+    .compare-card p {
+      font-size: clamp(0.68rem, 1vw, 0.9rem);
+      line-height: 1.55;
+    }
+
+    .compare-card .verdict {
+      margin-top: auto;
+      border-top: 1px solid var(--line);
+      padding-top: clamp(0.4rem, 0.8vw, 0.6rem);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: clamp(0.56rem, 0.76vw, 0.7rem);
+      line-height: 1.42;
+    }
+
+    .posttrain-flow {
+      display: grid;
+      grid-template-columns: 0.78fr auto 1.25fr auto 1fr auto 0.9fr;
+      gap: clamp(0.42rem, 0.85vw, 0.7rem);
+      align-items: stretch;
+      border: 1px solid var(--line);
+      border-top-color: var(--line-strong);
+      padding: clamp(0.7rem, 1.3vw, 1rem);
+      background:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+        rgba(35, 47, 85, 0.28);
+      background-size: 40px 40px;
+    }
+
+    .pt-node,
+    .pt-cluster {
+      border: 1px solid var(--line);
+      background: rgba(28, 38, 68, 0.76);
+      padding: clamp(0.58rem, 1vw, 0.8rem);
+      min-height: clamp(15rem, 42vh, 24rem);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.36rem, 0.75vw, 0.58rem);
+    }
+
+    .pt-node.light {
+      background: var(--bg-light);
+      color: var(--c-fg-light, #1a2030);
+      border-color: var(--c-border-light, #cac4b4);
+    }
+
+    .pt-node strong,
+    .pt-cluster strong {
+      color: var(--accent-cyan);
+      font-family: var(--font-display);
+      font-size: clamp(0.95rem, 1.45vw, 1.16rem);
+      line-height: 1.15;
+    }
+
+    .pt-node.light strong {
+      color: var(--c-fg-light, #1a2030);
+    }
+
+    .pt-node span,
+    .pt-cluster span {
+      color: var(--text-secondary);
+      font-size: clamp(0.6rem, 0.86vw, 0.78rem);
+      line-height: 1.42;
+    }
+
+    .pt-node.light span {
+      color: var(--c-fg-light-2, #5a6270);
+    }
+
+    .pt-mini {
+      border-top: 1px solid var(--line);
+      padding-top: clamp(0.32rem, 0.65vw, 0.48rem);
+    }
+
+    .pt-mini a {
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: clamp(0.54rem, 0.72vw, 0.68rem);
+    }
+
+    .pt-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: clamp(1rem, 1.7vw, 1.35rem);
+    }
+
+    @media (max-width: 900px) {
+      .hero-layout,
+      .relation-map {
+        grid-template-columns: 1fr;
+      }
+
+      .strategy-grid,
+      .benchmark-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .section-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .section-header p {
+        max-width: 100%;
+        text-align: left;
+      }
+    }
+
+    @media (max-height: 700px) {
+      .feature-card,
+      .strategy-card,
+      .bench-card,
+      .metric {
+        min-height: auto;
+      }
+
+      .flow-board {
+        min-height: clamp(14rem, 48vh, 22rem);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" aria-hidden="true"></div>
+  <nav class="jump-nav" aria-label="侧边栏导航">
+    <div class="nav-title">DeepSeek-V4</div>
+    <a href="#cover">首页</a>
+    <a href="#product">产品形态</a>
+    <a href="#relation">章节关系</a>
+    <a href="#posttrain">Posttrain</a>
+    <a href="#posttrain-compare">Posttrain 对比</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#pretrain">Pretrain</a>
+    <a href="#infra">Infra</a>
+    <details class="nav-section" open>
+      <summary>Posttrain 特性</summary>
+      <a href="#feat-specialist">领域专家 SFT + RL</a>
+      <a href="#feat-reasoning-modes">Reasoning Effort Modes</a>
+      <a href="#feat-grm">Generative Reward Model</a>
+      <a href="#feat-interleaved-thinking">Interleaved Thinking</a>
+      <a href="#feat-quick-instruction">Quick Instruction</a>
+      <a href="#feat-opd">Full-Vocabulary OPD</a>
+    </details>
+    <details class="nav-section">
+      <summary>Architecture 特性</summary>
+      <a href="#feat-moe-mtp">DeepSeekMoE + MTP</a>
+      <a href="#feat-mhc">mHC 残差连接</a>
+      <a href="#feat-csa">CSA / HCA 混合注意力</a>
+      <a href="#feat-swa-sink">SWA + Attention Sink</a>
+      <a href="#feat-muon">Muon Optimizer</a>
+    </details>
+    <details class="nav-section">
+      <summary>Pretrain 特性</summary>
+      <a href="#feat-long-doc-data">长文档与高质量语料</a>
+      <a href="#feat-agentic-data">代码、数学、Agentic Data</a>
+      <a href="#feat-length-curriculum">4K → 16K → 64K → 1M</a>
+      <a href="#feat-sparse-warmup">Dense Warmup → Sparse Attention</a>
+      <a href="#feat-anticipatory-routing">Anticipatory Routing</a>
+      <a href="#feat-swiglu-clamping">SwiGLU Clamping</a>
+    </details>
+    <details class="nav-section">
+      <summary>Infra 特性</summary>
+      <a href="#feat-megamoe">MegaMoE / EP Overlap</a>
+      <a href="#feat-tilelang">TileLang Kernel DSL</a>
+      <a href="#feat-deterministic-kernels">Batch-Invariant Kernels</a>
+      <a href="#feat-fp4-qat">FP4 QAT</a>
+      <a href="#feat-kv-cache">Hybrid KV Cache</a>
+      <a href="#feat-dsec">On-Disk KV + DSec</a>
+    </details>
+    <details class="nav-section">
+      <summary>验证</summary>
+      <a href="#benchmark">Benchmark</a>
+      <a href="#summary">专题索引</a>
+    </details>
+  </nav>
+  <div class="keyboard-hint">↑↓ / Space 翻页 · 左侧目录可直达专题</div>
+
+  <section id="cover" class="slide" data-kicker="DeepSeek-V4 Introduction" data-page="00 / 32">
+    <div class="slide-content">
+      <div class="hero-layout">
+        <div class="hero-stack">
+          <span class="eyebrow reveal">DeepSeek-V4 技术报告 · Introduction</span>
+          <h1 class="reveal">Million-Token Context Intelligence</h1>
+          <p class="subtitle reveal">DeepSeek-V4 系列以高效百万上下文为主轴，将产品形态、架构创新、预训练、后训练和基础设施组织为一套面向长程任务与测试时扩展的系统方案。</p>
+        </div>
+        <div class="stat-panel reveal">
+          <div class="metric-grid">
+            <div class="metric"><strong>1M</strong><span>上下文长度，支撑长程推理、跨文档分析和 agentic workflows。</span></div>
+            <div class="metric"><strong>32T+</strong><span>预训练 token 规模，覆盖数学、代码、网页、长文档等高质量类别。</span></div>
+            <div class="metric"><strong>27%</strong><span>V4-Pro 在 1M 上下文下相对 V3.2 的单 token FLOPs。</span></div>
+            <div class="metric"><strong>10%</strong><span>V4-Pro 在 1M 上下文下相对 V3.2 的 KV cache 体积。</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="product" class="slide" data-kicker="Product Features" data-page="01 / 32">
+    <div class="slide-content">
+      <div class="section-header reveal">
+        <h2>产品形态：三种推理模式</h2>
+        <p>DeepSeek-V4 最终面向使用时体现为三种 reasoning effort：Non-think、Think、Think Max；评测表中对应简写为 Non-Think、High、Max。三种模式同时覆盖 DeepSeek-V4-Pro 与 DeepSeek-V4-Flash 两条模型线。</p>
+      </div>
+      <div class="mode-diagram reveal">
+        <div></div>
+        <a class="mode-label" href="#feat-reasoning-modes"><strong>Non-think</strong><span>评测表写作 Non-Think；快速、直觉式响应。</span></a>
+        <a class="mode-label" href="#feat-reasoning-modes"><strong>Think</strong><span>评测表写作 High；更充分的逻辑分析。</span></a>
+        <a class="mode-label" href="#feat-reasoning-modes"><strong>Think Max</strong><span>评测表写作 Max；最大推理努力。</span></a>
+        <div class="model-label"><strong>DeepSeek-V4-Pro</strong><span>1.6T 总参数 / 49B 激活，偏能力上限。</span></div>
+        <div class="mode-cell"><strong>Pro Non-think</strong><span>快答模式。</span></div>
+        <div class="mode-cell"><strong>Pro Think</strong><span>评测列名为 Pro High。</span></div>
+        <div class="mode-cell"><strong>Pro Think Max</strong><span>评测列名为 Pro Max；评测摘要多以 Pro-Max 呈现。</span></div>
+        <div class="model-label"><strong>DeepSeek-V4-Flash</strong><span>284B 总参数 / 13B 激活，偏成本效率。</span></div>
+        <div class="mode-cell"><strong>Flash Non-think</strong><span>低延迟响应。</span></div>
+        <div class="mode-cell"><strong>Flash Think</strong><span>评测列名为 Flash High。</span></div>
+        <div class="mode-cell"><strong>Flash Think Max</strong><span>评测列名为 Flash Max；更高 thinking budget 增强推理。</span></div>
+      </div>
+      <div class="problem-list reveal">
+        <div class="problem"><strong>模式含义</strong><p>三种模式不是三套架构，而是同一模型线在后训练中形成的不同推理努力配置。</p></div>
+        <div class="problem"><strong>模型对应</strong><p>Pro 和 Flash 都支持三种模式；区别在于参数规模、激活规模、成本效率和能力上限。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="relation" class="slide" data-kicker="Chapter Map" data-page="02 / 32">
+    <div class="slide-content">
+      <div class="section-header reveal">
+        <h2>章节关系：Introduction 的真实叙事链</h2>
+        <p>Introduction 按“问题定义 → 产品目标 → 架构方案 → 基础设施落地 → 预训练结果 → 后训练与评测”的顺序展开。第 2 至第 5 章分别承接这条链路中的技术机制、系统实现、base model 训练和最终模型验证。</p>
+      </div>
+      <div class="relation-map">
+        <div class="flow-board reveal">
+          <div class="diagram-title">
+            <span>Paper structure from Introduction</span>
+            <span>problem / mechanism / system / base / final model</span>
+          </div>
+          <div class="chapter-flow">
+            <a class="node problem" href="#product"><strong>1 Introduction</strong><span>先提出 reasoning 与 long-horizon 场景受限于 vanilla attention 的二次复杂度，再定义 Pro / Flash 两个百万上下文产品目标。</span></a>
+            <div class="flow-arrow">→</div>
+            <a class="node arch" href="#architecture"><strong>2 Architecture</strong><span>随后说明核心机制：保留 DeepSeekMoE 与 MTP，引入 CSA/HCA、mHC 和 Muon，直接回应长上下文效率与稳定性。</span></a>
+            <div class="flow-arrow">→</div>
+            <a class="node infra" href="#infra"><strong>3 General Infra</strong><span>再说明系统落地：MoE 融合通信计算、TileLang、确定性 kernel、FP4 QAT、训练框架和 KV cache 管理。</span></a>
+            <div class="flow-arrow">→</div>
+            <a class="node pre" href="#pretrain"><strong>4 Pre-Training</strong><span>在上述架构与系统基础上，Flash 训练 32T token，Pro 训练 33T token，并原生支持 1M-length contexts。</span></a>
+          </div>
+          <div class="evidence-row">
+            <div class="evidence"><strong>Problem</strong>测试时扩展与长程任务需要突破注意力瓶颈。</div>
+            <div class="evidence"><strong>Efficiency</strong>1M 场景下 V4-Pro 为 V3.2 的 27% FLOPs / 10% KV cache。</div>
+            <div class="evidence"><strong>System</strong>训练、推理和 rollout 的可复现、高吞吐、低存储成本实现。</div>
+            <div class="evidence"><strong>Base Output</strong>Flash-Base 多数评测超过 V3.2-Base，Pro-Base 建立更强基础模型。</div>
+          </div>
+          <div class="infra-foundation">
+            <strong>5 Post-Training & Evaluation</strong>
+            <span>论文随后进入最终模型阶段：先训练数学、代码、Agent、指令遵循等专家，再用 OPD 合并为统一模型；第 5 章同时给出标准 benchmark 与真实任务评测，因此“后训练”和“评测结果”在实际文本中属于同一章的连续展开。</span>
+          </div>
+        </div>
+        <div class="relation-copy reveal">
+          <div class="callout">
+            <p><strong>结构判断：</strong>Introduction 并不是先讲数据或训练策略，而是先讲长上下文效率瓶颈，再按论文目录顺序交代架构、基础设施、预训练、后训练与评测。</p>
+          </div>
+          <div class="problem-list">
+            <div class="problem"><strong>第 2 章</strong><p>负责解释“为什么百万上下文计算可行”。</p></div>
+            <div class="problem"><strong>第 3 章</strong><p>负责解释“为什么这些机制能在训练和推理系统里高效运行”。</p></div>
+            <div class="problem"><strong>第 4 章</strong><p>负责说明 base model 如何通过 32T/33T tokens 训练出来。</p></div>
+            <div class="problem"><strong>第 5 章</strong><p>负责把 base model 变成最终产品模型，并用 benchmark / real-world tasks 验证。</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="posttrain" class="slide" data-kicker="Post-Training First" data-page="03 / 32">
+    <div class="slide-content">
+      <div class="section-header reveal">
+        <h2>Posttrain：专家能力的统一合成</h2>
+        <p>后训练的完整链路是：从 Base Model 出发，先训练多个领域专家，再补充推理模式、奖励建模和工具交互能力，最后通过 full-vocabulary OPD 合并为统一模型。</p>
+      </div>
+      <div class="posttrain-flow reveal">
+        <div class="pt-node">
+          <strong>Base Model</strong>
+          <span>预训练后的 Flash-Base / Pro-Base，已经具备 1M 上下文基础能力。</span>
+          <div class="pt-mini"><a href="#pretrain">来自 Pre-Training</a></div>
+        </div>
+        <div class="pt-arrow">→</div>
+        <div class="pt-cluster">
+          <strong>1. 领域专家训练</strong>
+          <span>按数学、代码、Agent、指令遵循等领域分别训练专家。</span>
+          <div class="pt-mini"><a href="#feat-specialist">SFT 建基础解法；GRPO 学习领域 reward 下更优的回答轨迹。</a></div>
+          <div class="pt-mini"><a href="#feat-reasoning-modes">Reasoning Effort：为 Non-think / Think / Think Max 训练不同推理预算。</a></div>
+          <div class="pt-mini"><a href="#feat-grm">GRM：处理 hard-to-verify 任务，用生成式评审给奖励。</a></div>
+        </div>
+        <div class="pt-arrow">→</div>
+        <div class="pt-cluster">
+          <strong>2. Agent 与交互能力</strong>
+          <span>让模型在工具调用和多轮任务中保持状态，并降低辅助任务延迟。</span>
+          <div class="pt-mini"><a href="#feat-interleaved-thinking">Interleaved Thinking：工具场景保留跨轮 reasoning history。</a></div>
+          <div class="pt-mini"><a href="#feat-quick-instruction">Quick Instruction：用特殊 token 复用 KV cache 执行搜索触发等辅助任务。</a></div>
+        </div>
+        <div class="pt-arrow">→</div>
+        <div class="pt-node light">
+          <strong>3. OPD 合并</strong>
+          <span>用多个专家作为 teacher，让统一 student 在自身轨迹上对齐 full-vocabulary logits。</span>
+          <div class="pt-mini"><a href="#feat-opd">输出：统一最终模型 + 三种推理模式 + benchmark / real-world tasks 验证。</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="posttrain-compare" class="slide" data-kicker="Post-Training Comparison" data-page="04 / 32">
+    <div class="slide-content">
+      <div class="section-header reveal">
+        <h2>Posttrain 思路对比：V3 / GLM-5 / V4</h2>
+        <p>三份技术报告的分水岭在于：V3 侧重“把强推理能力注入通用模型”，GLM-5 侧重“连续异步 RL 训练长程 Agent”，V4 侧重“多专家能力通过 OPD 合并成统一模型”。</p>
+      </div>
+      <div class="compare-grid">
+        <div class="compare-card reveal">
+          <h3>DeepSeek-V3</h3>
+          <p>后训练是经典 SFT + RL：SFT 阶段从 DeepSeek-R1 系列蒸馏推理数据，再用 GRPO 结合 rule-based / model-based reward 做通用对齐。</p>
+          <p>核心目标是把 reasoning 能力注入 V3，同时保持回答长度、准确性和通用偏好之间的平衡。</p>
+          <div class="verdict">关键词：R1 distillation → SFT → GRPO RL。</div>
+        </div>
+        <div class="compare-card reveal">
+          <h3>GLM-5</h3>
+          <p>后训练强调顺序式 RL pipeline：Reasoning RL → Agentic RL → General RL，并用 asynchronous RL infrastructure 将 rollout generation 与 model update 解耦。</p>
+          <p>核心目标是让模型持续学习长程 Agent 交互，尤其提升复杂软件工程任务中的规划、自我修正和工具使用。</p>
+          <div class="verdict">关键词：sequential RL + async agent RL + cross-stage distillation。</div>
+        </div>
+        <div class="compare-card reveal">
+          <h3>DeepSeek-V4</h3>
+          <p>后训练先独立训练数学、代码、Agent、指令遵循等领域专家，再用 multi-teacher On-Policy Distillation 将多个教师能力整合进一个学生模型。</p>
+          <p>核心变化是用 OPD 替代混合 RL 合并阶段，避免专家权重或能力直接混合带来的退化，并用 full-vocabulary logits 提高蒸馏稳定性。</p>
+          <div class="verdict">关键词：specialists → full-vocab OPD → unified model。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="architecture" class="slide" data-kicker="Architecture" data-page="05 / 32">
+    <div class="slide-content">
+      <div class="section-header reveal">
+        <h2>Architecture：百万上下文的计算基础</h2>
+        <p>第 2 章对应 Introduction 的核心技术问题：在降低长序列注意力成本的同时，保持模型表达力、训练稳定性和推理效率。</p>
+      </div>
+      <div class="strategy-grid">
+        <a class="strategy-card reveal" href="#feat-moe-mtp">
+          <h3>DeepSeekMoE + MTP 继承</h3>
+          <p>沿用 MoE 和 Multi-Token Prediction，保留 V3 已验证的高效能力底座。</p>
+          <div class="tag-row"><span class="tag">对应问题：能力底座复用</span></div>
+        </a>
+        <a class="strategy-card reveal" href="#feat-mhc">
+          <h3>mHC 残差连接</h3>
+          <p>把残差映射约束到双随机矩阵流形，控制谱范数，增强层间信号传播稳定性。</p>
+          <div class="tag-row"><span class="tag">对应问题：深层堆叠数值不稳</span></div>
+        </a>
+        <a class="strategy-card reveal" href="#feat-csa">
+          <h3>CSA 压缩稀疏注意力</h3>
+          <p>先把每 m 个 KV 压成一个 entry，再用 DSA 只选择 top-k 压缩 KV 参与核心注意力。</p>
+          <div class="tag-row"><span class="tag">对应问题：长序列 FLOPs 激增</span></div>
+        </a>
+        <a class="strategy-card reveal" href="#feat-csa">
+          <h3>HCA 重压缩注意力</h3>
+          <p>以更大压缩比 m′ 聚合 KV，保留 dense attention，用极致压缩降低 KV cache 规模。</p>
+          <div class="tag-row"><span class="tag">对应问题：1M KV 存储不可承受</span></div>
+        </a>
+        <a class="strategy-card reveal" href="#feat-swa-sink">
+          <h3>SWA + Attention Sink</h3>
+          <p>滑动窗口补回局部依赖，attention sink 允许头部调节总注意力质量。</p>
+          <div class="tag-row"><span class="tag">对应问题：压缩后局部细节损失</span></div>
+        </a>
+        <a class="strategy-card reveal" href="#feat-muon">
+          <h3>Muon Optimizer</h3>
+          <p>大多数模块用 Muon，配合 hybrid Newton-Schulz 正交化，提升收敛速度和稳定性。</p>
+          <div class="tag-row"><span class="tag">对应问题：大模型训练收敛与稳定</span></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="pretrain" class="slide" data-kicker="Pre-Training" data-page="06 / 32">
+    <div class="slide-content">
+      <div class="section-header reveal">
+        <h2>Pretrain：架构、数据与训练策略汇合</h2>
+        <p>第 4 章将 32T+ token、原生 1M 上下文和 base model 能力提升落到数据构造、长度课程和稳定性治理上。</p>
+      </div>
+      <div class="strategy-grid">
+        <a class="strategy-card reveal" href="#feat-long-doc-data">
+          <h3>长文档与高质量语料</h3>
+          <p>在 V3 数据上强化多样性，过滤自动生成/模板内容，突出论文、技术报告等长文档。</p>
+          <div class="tag-row"><span class="tag">对应问题：长上下文缺少高质量来源</span></div>
+        </a>
+        <a class="strategy-card reveal" href="#feat-agentic-data">
+          <h3>代码、数学、Agentic Data</h3>
+          <p>数学和编程仍是核心语料，并在 mid-training 引入 agentic data 强化代码与工具任务。</p>
+          <div class="tag-row"><span class="tag">对应问题：推理与 Agent 能力缺口</span></div>
+        </a>
+        <a class="strategy-card reveal" href="#feat-length-curriculum">
+          <h3>4K → 16K → 64K → 1M</h3>
+          <p>训练从短序列逐步扩展到百万长度，让模型逐渐适应超长上下文。</p>
+          <div class="tag-row"><span class="tag">对应问题：直接长训不稳定/成本高</span></div>
+        </a>
+        <a class="strategy-card reveal" href="#feat-sparse-warmup">
+          <h3>Dense Warmup → Sparse Attention</h3>
+          <p>先用 dense attention warmup，再在 64K 后引入 sparse attention，并短阶段预热 lightning indexer。</p>
+          <div class="tag-row"><span class="tag">对应问题：稀疏注意力冷启动</span></div>
+        </a>
+        <a class="strategy-card reveal" href="#feat-anticipatory-routing">
+          <h3>Anticipatory Routing</h3>
+          <p>使用历史参数预先计算 routing indices，在 loss spike 时短暂启用，切断路由导致的异常循环。</p>
+          <div class="tag-row"><span class="tag">对应问题：MoE outlier 与 loss spike</span></div>
+        </a>
+        <a class="strategy-card reveal" href="#feat-swiglu-clamping">
+          <h3>SwiGLU Clamping</h3>
+          <p>限制 SwiGLU 的线性和 gate 分量，直接压制异常值而不牺牲性能。</p>
+          <div class="tag-row"><span class="tag">对应问题：训练中数值异常</span></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="infra" class="slide" data-kicker="General Infrastructures" data-page="07 / 32">
+    <div class="slide-content">
+      <div class="section-header reveal">
+        <h2>Infra：规模化训练与服务底座</h2>
+        <p>第 3 章的重点不是单个工程技巧，而是三层基础设施能力：让 MoE 通信不拖慢计算，让新算子高效且可复现，让训练、推理和 Agent 评测在百万上下文下可持续运行。</p>
+      </div>
+      <div class="infra-diagram reveal">
+        <div class="infra-layer">
+          <strong>MoE 执行层</strong>
+          <span>Expert waves 将 Dispatch / GEMM / Combine 串成流水线，把跨节点通信隐藏在专家计算中。</span>
+        </div>
+        <div class="infra-layer">
+          <strong>Kernel 可信层</strong>
+          <span>TileLang + deterministic kernels 让新算子既能快速开发，又能在训练、后训练和推理之间保持 bitwise 对齐。</span>
+        </div>
+        <div class="infra-layer">
+          <strong>状态管理层</strong>
+          <span>FP4、Hybrid KV cache、on-disk KV 与 DSec 管理显存、缓存、rollout 和 sandbox 生命周期。</span>
+        </div>
+      </div>
+      <div class="strategy-grid">
+        <a class="strategy-card reveal" href="#feat-megamoe">
+          <h3>1. 并行通信隐藏</h3>
+          <p>针对 MoE Expert Parallelism 的跨节点通信瓶颈，使用 expert waves 与 fused mega-kernel 将 Dispatch、GEMM、Combine 组织成细粒度流水线，把通信藏在计算下面。</p>
+          <div class="tag-row"><span class="tag">MegaMoE</span><span class="tag">EP overlap</span><span class="tag">1.50-1.96× speedup</span></div>
+        </a>
+        <a class="strategy-card reveal" href="#feat-tilelang">
+          <h3>2. Kernel 与可复现体系</h3>
+          <p>针对 CSA/HCA/mHC 等新结构带来的大量细粒度算子与调试困难，使用 TileLang 融合 kernel、Host Codegen、batch-invariant 与 deterministic kernel，兼顾开发效率、性能和 bitwise 对齐。</p>
+          <div class="tag-row"><span class="tag">TileLang</span><span class="tag">deterministic kernels</span><span class="tag">bitwise alignment</span></div>
+        </a>
+        <a class="strategy-card reveal" href="#feat-fp4-qat">
+          <h3>3. 训练与推理状态管理</h3>
+          <p>针对百万上下文带来的显存、KV cache、rollout 和 Agent sandbox 压力，使用 FP4 QAT、Muon/mHC/CP 训练实现、异构 KV cache、on-disk prefix reuse 与 DSec，支撑长上下文训练、服务和评测。</p>
+          <div class="tag-row"><span class="tag">FP4 QAT</span><span class="tag">Hybrid KV cache</span><span class="tag">DSec sandbox</span></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-specialist" class="slide feature-slide" data-kicker="Feature / Posttrain" data-page="08 / 32">
+    <div class="slide-content">
+      <div class="feature-detail feature-detail-wide reveal">
+        <span class="eyebrow">Posttrain · Specialist Training</span>
+        <h2>领域专家 SFT + RL</h2>
+        <p class="feature-sentence">针对统一模型难以在数学、代码、Agent、指令遵循中同时专精的问题，先用领域 SFT 教会基本解法，再用 GRPO 学习“同一题里哪些回答相对更符合领域 reward”，得到可被后续蒸馏合并的专家能力。</p>
+        <div class="rl-example">
+          <div>
+            <strong>GRPO 学什么</strong>
+            <p>它不是直接学习标准答案文本，而是在一组候选回答之间比较相对优劣：哪个推理更完整、哪个代码能通过测试、哪个工具调用轨迹更符合目标 reward。</p>
+          </div>
+          <div>
+            <strong>例子：代码专家</strong>
+            <p>同一道编程题采样 4 个解法：A 编译失败，B 只过样例，C 通过全部单元测试但解释混乱，D 通过测试且边界处理清楚。GRPO 根据测试结果和代码质量 reward 提升 D/C 这类轨迹概率，压低 A/B。</p>
+          </div>
+        </div>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-reasoning-modes" class="slide feature-slide" data-kicker="Feature / Posttrain" data-page="09 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Posttrain · Reasoning Effort</span>
+        <h2>Reasoning Effort Modes</h2>
+        <p class="feature-sentence">针对不同任务需要不同推理预算的问题，使用 Non-think、Think、Think Max 三种训练与输出格式，得到速度、成本和能力可调的推理模式。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-grm" class="slide feature-slide" data-kicker="Feature / Posttrain" data-page="10 / 32">
+    <div class="slide-content">
+      <div class="feature-detail feature-detail-wide reveal">
+        <span class="eyebrow">Posttrain · Reward Modeling</span>
+        <h2>Generative Reward Model</h2>
+        <p class="feature-sentence">针对 hard-to-verify 任务难以用规则或标量奖励可靠评分的问题，使用模型按 rubric 生成判断理由并给出轨迹评分，得到更少人工标注下更稳健的偏好判断。</p>
+        <div class="grm-layout">
+          <div class="mini-flow">
+            <div class="mini-step"><strong>Rubric 数据</strong><span>人工给出少量评价标准和示例。</span></div>
+            <div class="mini-arrow">→</div>
+            <div class="mini-step"><strong>生成式评审</strong><span>模型阅读回答轨迹，生成理由和评分。</span></div>
+            <div class="mini-arrow">→</div>
+            <div class="mini-step"><strong>RL 优化</strong><span>评审能力和生成能力一起被强化。</span></div>
+          </div>
+          <div class="example-box">
+            <strong>例子</strong>
+            <p>用户要求写一份“保留事实、语气正式、覆盖风险”的法律摘要。这里的轨迹不是只看最终答案，而是把模型从理解任务到生成答案的整段输出作为可评审对象。</p>
+          </div>
+        </div>
+        <div class="trajectory-box">
+          <div class="trajectory-step"><strong>Prompt</strong><span>“把这份合同争议整理成给法务总监看的摘要，必须列出事实、风险和建议。”</span></div>
+          <div class="trajectory-step"><strong>Policy trajectory</strong><span>模型先列事实：付款逾期、交付延期、违约条款；再生成摘要和建议。</span></div>
+          <div class="trajectory-step"><strong>GRM review</strong><span>按 rubric 检查：是否遗漏关键日期、是否夸大法律结论、是否覆盖双方风险。</span></div>
+          <div class="trajectory-step"><strong>Reward signal</strong><span>若摘要准确覆盖事实且建议谨慎，给高奖励；若漏掉违约条款或语气武断，给低奖励。</span></div>
+        </div>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-interleaved-thinking" class="slide feature-slide" data-kicker="Feature / Posttrain" data-page="11 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Posttrain · Tool Reasoning</span>
+        <h2>Interleaved Thinking</h2>
+        <p class="feature-sentence">针对复杂工具任务跨轮丢失推理状态的问题，使用工具调用场景下保留完整 reasoning history 的上下文管理，得到更连贯的长程 Agent 执行。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-quick-instruction" class="slide feature-slide" data-kicker="Feature / Posttrain" data-page="12 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Posttrain · Auxiliary Tasks</span>
+        <h2>Quick Instruction</h2>
+        <p class="feature-sentence">针对搜索触发、意图识别等辅助任务会重复 prefill 的问题，使用专用特殊 token 复用已有 KV cache，得到更低 TTFT 和更少小模型维护成本。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-opd" class="slide feature-slide" data-kicker="Feature / Posttrain" data-page="13 / 32">
+    <div class="slide-content">
+      <div class="feature-detail feature-detail-wide reveal">
+        <span class="eyebrow">Posttrain · Multi-Teacher Merge</span>
+        <h2>Full-Vocabulary OPD</h2>
+        <p class="feature-sentence">针对多个专家模型直接合并容易退化的问题，使用学生在自己生成的轨迹上，对教师的完整词表概率分布做 reverse KL 对齐，得到更稳定的多教师能力合并。</p>
+        <div class="opd-layout">
+          <div class="opd-box">
+            <strong>方法怎么做</strong>
+            <p>先让学生模型自己生成回答轨迹；再让相关教师模型在这些位置上输出完整 vocabulary logits；最后让学生分布靠近教师分布，而不是只模仿已经采样出来的那个 token。</p>
+          </div>
+          <div class="opd-box">
+            <strong>为什么叫 full-vocabulary</strong>
+            <p>因为它看的是每个位置上所有候选词的概率形状。比如教师不仅认为“therefore”好，也认为“thus”接近可用、而“banana”极差；这些暗知识都会传给学生。</p>
+          </div>
+          <div class="opd-box">
+            <strong>例子</strong>
+            <p>数学专家看到学生写到“所以答案是”，完整词表会给 “42” 高概率、给 “因此” 中等概率、给无关词低概率；学生学到的是这一整个偏好分布，而不只是硬抄一个 “42”。</p>
+          </div>
+          <div class="opd-box">
+            <strong>分布示意</strong>
+            <div class="dist-row"><span></span><span>42</span><span>therefore</span><span>thus</span><span>banana</span></div>
+            <div class="dist-row"><span>Teacher</span><span class="hot">0.62</span><span>0.18</span><span>0.14</span><span>0.00</span></div>
+            <div class="dist-row"><span>Student</span><span>0.31</span><span class="hot">0.35</span><span>0.08</span><span>0.04</span></div>
+            <p>训练目标是把 Student 的整行分布拉向 Teacher，而不是只奖励某一个采样 token。</p>
+          </div>
+        </div>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-moe-mtp" class="slide feature-slide" data-kicker="Feature / Architecture" data-page="14 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Architecture · Figure 2</span>
+        <h2>DeepSeekMoE + MTP</h2>
+        <p class="feature-sentence">针对新模型需要继承 V3 已验证能力底座的问题，使用 DeepSeekMoE 和 Multi-Token Prediction，得到参数高效且可延续的基础架构。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-mhc" class="slide feature-slide" data-kicker="Feature / Architecture" data-page="15 / 32">
+    <div class="slide-content">
+      <div class="feature-detail feature-detail-wide mhc-detail reveal">
+        <span class="eyebrow">Architecture · Residual Path</span>
+        <h2>mHC 残差连接</h2>
+        <div class="residual-compare">
+          <div class="residual-panel">
+            <h3>ResNet：单一路径残差</h3>
+            <div class="resnet-line">
+              <span>x</span>
+              <span>→</span>
+              <span class="res-block">F(x)</span>
+              <span>→</span>
+              <span>x + F(x)</span>
+              <span class="skip-arc">↷ skip x</span>
+            </div>
+            <p>普通 ResNet 只有一条 residual stream：层输出直接加回原输入，结构简单但扩展维度有限。</p>
+          </div>
+          <div class="residual-panel">
+            <h3>Hyper-Connected / mHC：多 residual stream</h3>
+            <div class="hyper-streams">
+              <div class="stream-row">
+                <span class="stream-box">x₁</span><span class="stream-box">x₂</span><span class="stream-box">x₃</span><span class="stream-box">x₄</span>
+              </div>
+              <div class="mix-row">A 选择层输入 → F(A·X) → C 写回；B 在多条 stream 间混合</div>
+              <div class="stream-row">
+                <span class="stream-box">x′₁</span><span class="stream-box">x′₂</span><span class="stream-box">x′₃</span><span class="stream-box">x′₄</span>
+              </div>
+            </div>
+            <p>Hyper-Connected ResNet 扩展为多条 residual stream；mHC 进一步把 B 约束为双随机矩阵，让混合非扩张，避免深层堆叠不稳定。</p>
+          </div>
+        </div>
+        <p class="feature-sentence">针对 Hyper-Connections 深层堆叠容易数值不稳的问题，mHC 不再只用单一路径残差，而是在多条 residual stream 之间做受约束混合：A 选择层输入、C 写回输出、B 负责跨 stream 混合，并把 B 约束到双随机矩阵流形以稳定传播。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-csa" class="slide feature-slide" data-kicker="Feature / Architecture" data-page="16 / 32">
+    <div class="slide-content">
+      <div class="feature-detail feature-detail-wide reveal">
+        <span class="eyebrow">Architecture · Hybrid Attention</span>
+        <h2>CSA / HCA 混合注意力</h2>
+        <p class="feature-sentence">针对百万上下文中注意力 FLOPs 和 KV cache 同时膨胀的问题，CSA 用“小段压缩 + 稀疏选择”降低计算，HCA 用“长段重压缩”降低缓存，二者交替使用让 1M context 可行。</p>
+        <div class="compression-diagram">
+          <div class="compression-panel">
+            <h3>CSA：短块压缩后再稀疏选择</h3>
+            <div class="token-row"><span class="token">t1</span><span class="token">t2</span><span class="token">t3</span><span class="token">t4</span><span class="compress-arrow">→</span><span class="token comp">C1</span></div>
+            <div class="token-row"><span class="token">t5</span><span class="token">t6</span><span class="token">t7</span><span class="token">t8</span><span class="compress-arrow">→</span><span class="token comp">C2</span></div>
+            <p>每 m 个 KV token 压成一个 compressed KV entry；查询 token 不看全部 C，而是由 lightning indexer 选择 top-k 个压缩块参与注意力。</p>
+          </div>
+          <div class="compression-panel">
+            <h3>HCA：更长块直接重压缩</h3>
+            <div class="token-row"><span class="token">t1</span><span class="token">t2</span><span class="token">t3</span><span class="token">t4</span><span class="token">t5</span><span class="token">t6</span><span class="token">t7</span><span class="token">t8</span><span class="compress-arrow">→</span><span class="token comp">H1</span></div>
+            <p>每 m′ 个 KV token 压成一个 HCA entry，且 m′ 远大于 m；它牺牲更细粒度索引，换取更小 KV cache 和更低长上下文存储压力。</p>
+          </div>
+        </div>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-swa-sink" class="slide feature-slide" data-kicker="Feature / Architecture" data-page="17 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Architecture · Local Detail</span>
+        <h2>SWA + Attention Sink</h2>
+        <p class="feature-sentence">针对压缩注意力可能丢失近邻细节和注意力过度分配的问题，使用滑动窗口分支与 attention sink，得到更稳的局部依赖建模。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-muon" class="slide feature-slide" data-kicker="Feature / Architecture" data-page="18 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Architecture · Optimization</span>
+        <h2>Muon Optimizer</h2>
+        <p class="feature-sentence">针对大规模 MoE 训练收敛速度和稳定性不足的问题，使用 Muon 与 hybrid Newton-Schulz 正交化更新，得到更快收敛和更稳训练。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-long-doc-data" class="slide feature-slide" data-kicker="Feature / Pretrain" data-page="19 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Pretrain · Data Construction</span>
+        <h2>长文档与高质量语料</h2>
+        <p class="feature-sentence">针对长上下文模型缺少高价值长文本训练来源的问题，使用论文、技术报告等长文档清洗语料，得到更好的长文理解基础。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-agentic-data" class="slide feature-slide" data-kicker="Feature / Pretrain" data-page="20 / 32">
+    <div class="slide-content">
+      <div class="feature-detail feature-detail-wide reveal">
+        <span class="eyebrow">Pretrain · Capability Data</span>
+        <h2>代码、数学、Agentic Data</h2>
+        <p class="feature-sentence">针对模型只会“回答代码题”但不会“在环境里完成任务”的问题，使用包含工具调用、文件读写、测试反馈和修复步骤的 mid-training agentic data，得到更强的真实 Agent 执行能力。</p>
+        <div class="trajectory-box">
+          <div class="trajectory-step"><strong>普通代码数据</strong><span>输入一道题，输出一段函数或解释；训练重点是答案本身是否正确。</span></div>
+          <div class="trajectory-step"><strong>Agentic data</strong><span>输入一个仓库任务，模型需要读文件、改代码、跑测试、根据报错继续修复。</span></div>
+          <div class="trajectory-step"><strong>例子轨迹</strong><span>“修复登录失败” → 查看 auth.py → 修改 token 过期判断 → 运行 pytest → 根据失败用例补边界条件。</span></div>
+          <div class="trajectory-step"><strong>训练收益</strong><span>模型学到任务分解、工具选择、状态跟踪和基于环境反馈迭代，而不只是生成一次性答案。</span></div>
+        </div>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-length-curriculum" class="slide feature-slide" data-kicker="Feature / Pretrain" data-page="21 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Pretrain · Length Schedule</span>
+        <h2>4K → 16K → 64K → 1M</h2>
+        <p class="feature-sentence">针对直接训练百万长度成本高且不稳定的问题，使用逐步扩展序列长度的课程训练，得到原生支持 1M context 的 base model。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-sparse-warmup" class="slide feature-slide" data-kicker="Feature / Pretrain" data-page="22 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Pretrain · Sparse Warmup</span>
+        <h2>Dense Warmup → Sparse Attention</h2>
+        <p class="feature-sentence">针对稀疏注意力和 indexer 冷启动的问题，使用先 dense warmup 再引入 sparse attention 的两阶段训练，得到稳定可用的长上下文注意力。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-anticipatory-routing" class="slide feature-slide" data-kicker="Feature / Pretrain" data-page="23 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Pretrain · Stability</span>
+        <h2>Anticipatory Routing</h2>
+        <p class="feature-sentence">针对 MoE routing 与 outlier 相互放大导致 loss spike 的问题，使用历史参数预计算路由并按需启用，得到更少训练尖峰。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-swiglu-clamping" class="slide feature-slide" data-kicker="Feature / Pretrain" data-page="24 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Pretrain · Stability</span>
+        <h2>SwiGLU Clamping</h2>
+        <p class="feature-sentence">针对 SwiGLU 激活异常值破坏训练稳定的问题，使用线性分量和 gate 分量裁剪，得到更稳定且不明显损失性能的训练过程。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-megamoe" class="slide feature-slide" data-kicker="Feature / Infra" data-page="25 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Infra · Expert Parallelism</span>
+        <h2>MegaMoE / EP Overlap</h2>
+        <p class="feature-sentence">针对 Expert Parallelism 通信延迟拖慢 MoE 的问题，使用 expert waves 融合通信与计算，得到更高端到端吞吐。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-tilelang" class="slide feature-slide" data-kicker="Feature / Infra" data-page="26 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Infra · Kernel Development</span>
+        <h2>TileLang Kernel DSL</h2>
+        <p class="feature-sentence">针对复杂新算子用 Torch ATen 组合效率低、开发慢的问题，使用 TileLang 编写融合 kernel，得到开发效率和运行性能兼顾的实现。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-deterministic-kernels" class="slide feature-slide" data-kicker="Feature / Infra" data-page="27 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Infra · Reproducibility</span>
+        <h2>Batch-Invariant Kernels</h2>
+        <p class="feature-sentence">针对 batch 位置变化导致结果不一致、难以调试的问题，使用 batch-invariant 与 deterministic kernel，得到训练、后训练和推理的 bitwise 对齐。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-fp4-qat" class="slide feature-slide" data-kicker="Feature / Infra" data-page="28 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Infra · Quantization</span>
+        <h2>FP4 QAT</h2>
+        <p class="feature-sentence">针对专家权重和 CSA indexer QK 路径占用显存与带宽的问题，使用 FP4 量化感知训练，得到更低内存流量和更快 rollout / inference。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-kv-cache" class="slide feature-slide" data-kicker="Feature / Infra" data-page="29 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Infra · Inference Cache</span>
+        <h2>Hybrid KV Cache</h2>
+        <p class="feature-sentence">针对 CSA、HCA、SWA 混合注意力不适配传统 PagedAttention 的问题，使用异构 KV cache 与 state cache，得到可管理的百万上下文缓存布局。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feat-dsec" class="slide feature-slide" data-kicker="Feature / Infra" data-page="30 / 32">
+    <div class="slide-content">
+      <div class="feature-detail reveal">
+        <span class="eyebrow">Infra · Serving & Sandbox</span>
+        <h2>On-Disk KV + DSec</h2>
+        <p class="feature-sentence">针对共享前缀重复 prefill 和 Agent 环境难规模化的问题，使用磁盘 KV 复用与 DSec sandbox，得到更低服务成本和更强 Agentic 训练评测支撑。</p>
+        <div class="feature-nav">
+          <a class="tag" href="#posttrain">Posttrain</a>
+          <a class="tag" href="#architecture">Architecture</a>
+          <a class="tag" href="#pretrain">Pretrain</a>
+          <a class="tag" href="#infra">Infra</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="benchmark" class="slide" data-kicker="Benchmark Output" data-page="31 / 32">
+    <div class="slide-content">
+      <div class="section-header reveal">
+        <h2>Benchmark：能力闭环的验证</h2>
+        <p>评测体系覆盖知识、推理、代码、1M 上下文、Agentic 任务和真实用户场景，用于验证架构、训练、后训练与基础设施组合后的最终收益。</p>
+      </div>
+      <div class="benchmark-grid">
+        <div class="bench-card reveal">
+          <h3>Knowledge</h3>
+          <p>Pro-Max 在 SimpleQA / Chinese-SimpleQA 等开放模型中显著领先，但仍与最强闭源模型存在差距。</p>
+          <div class="tag-row"><span class="tag">SimpleQA 57.9</span></div>
+        </div>
+        <div class="bench-card reveal">
+          <h3>Reasoning</h3>
+          <p>扩展 reasoning tokens 后，Pro-Max 超过既有开放模型，Flash-Max 也能以更高思考预算追上部分强模型。</p>
+          <div class="tag-row"><span class="tag">Codeforces 3206</span></div>
+        </div>
+        <div class="bench-card reveal">
+          <h3>1M Context</h3>
+          <p>MRCR 与 CorpusQA 用来验证百万上下文，1M 下检索能力仍保持强韧。</p>
+          <div class="tag-row"><span class="tag">MRCR 1M 83.5</span></div>
+        </div>
+        <div class="bench-card reveal">
+          <h3>Agentic</h3>
+          <p>Terminal Bench、SWE、MCPAtlas、Toolathlon 等验证工具使用和软件工程任务泛化。</p>
+          <div class="tag-row"><span class="tag">SWE Verified 80.6</span></div>
+        </div>
+      </div>
+      <div class="callout reveal">
+        <p><strong>综合判断：</strong>DeepSeek-V4 的 Introduction 呈现的是完整能力闭环：产品形态定义目标，架构与数据训练形成 base，posttrain 合成可用能力，benchmark 验证结果，infra 将各环节转化为可规模化系统。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="summary" class="slide" data-kicker="Feature Jump Index" data-page="32 / 32">
+    <div class="slide-content">
+      <div class="section-header reveal">
+        <h2>专题索引</h2>
+        <p>以下索引用于快速定位 DeepSeek-V4 Introduction 中的关键主题。</p>
+      </div>
+      <div class="strategy-grid">
+        <a class="strategy-card reveal" href="#product"><h3>产品特性</h3><p>Pro/Flash、1M context、参数规模和效率目标。</p></a>
+        <a class="strategy-card reveal" href="#relation"><h3>章节关系</h3><p>问题与产品目标 → 架构 → 基础设施 → 预训练 → 后训练与评测。</p></a>
+        <a class="strategy-card reveal" href="#posttrain"><h3>Posttrain</h3><p>专家训练、reasoning modes、GRM、interleaved thinking、Quick Instruction、OPD。</p></a>
+        <a class="strategy-card reveal" href="#architecture"><h3>Architecture</h3><p>CSA/HCA、mHC、Muon、SWA 与 KV 效率。</p></a>
+        <a class="strategy-card reveal" href="#pretrain"><h3>Pretrain</h3><p>32T+ 语料、长文档、长度课程、稀疏注意力 warmup、训练稳定性。</p></a>
+        <a class="strategy-card reveal" href="#feat-specialist"><h3>特性解释</h3><p>按 Posttrain、Architecture、Pretrain、Infra 查看关键机制解读。</p></a>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    /* ===========================================
+       SLIDE AND FEATURE NAVIGATION CONTROLLER
+       =========================================== */
+    class FeatureMap {
+      constructor() {
+        this.slides = Array.from(document.querySelectorAll(".slide"));
+        this.links = Array.from(document.querySelectorAll(".jump-nav a"));
+        this.progressBar = document.querySelector(".progress-bar");
+        this.currentIndex = 0;
+        this.setupObserver();
+        this.setupKeyboard();
+        this.setupWheel();
+        this.setupTouch();
+        this.updateProgress();
+      }
+
+      setupObserver() {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              this.currentIndex = this.slides.indexOf(entry.target);
+              this.updateProgress();
+              this.updateActiveLink(entry.target.id);
+            }
+          });
+        }, { threshold: 0.55 });
+
+        this.slides.forEach((slide) => observer.observe(slide));
+      }
+
+      setupKeyboard() {
+        window.addEventListener("keydown", (event) => {
+          const forward = ["ArrowDown", "PageDown", " "];
+          const backward = ["ArrowUp", "PageUp"];
+          if (forward.includes(event.key)) {
+            event.preventDefault();
+            this.goTo(this.currentIndex + 1);
+          }
+          if (backward.includes(event.key)) {
+            event.preventDefault();
+            this.goTo(this.currentIndex - 1);
+          }
+          if (event.key === "Home") {
+            event.preventDefault();
+            this.goTo(0);
+          }
+          if (event.key === "End") {
+            event.preventDefault();
+            this.goTo(this.slides.length - 1);
+          }
+        });
+      }
+
+      setupWheel() {
+        let locked = false;
+        window.addEventListener("wheel", (event) => {
+          if (Math.abs(event.deltaY) < 30 || locked) return;
+          locked = true;
+          this.goTo(this.currentIndex + (event.deltaY > 0 ? 1 : -1));
+          window.setTimeout(() => { locked = false; }, 520);
+        }, { passive: true });
+      }
+
+      setupTouch() {
+        let startY = 0;
+        window.addEventListener("touchstart", (event) => {
+          startY = event.touches[0].clientY;
+        }, { passive: true });
+
+        window.addEventListener("touchend", (event) => {
+          const endY = event.changedTouches[0].clientY;
+          const delta = startY - endY;
+          if (Math.abs(delta) > 42) {
+            this.goTo(this.currentIndex + (delta > 0 ? 1 : -1));
+          }
+        }, { passive: true });
+      }
+
+      goTo(index) {
+        const next = Math.max(0, Math.min(this.slides.length - 1, index));
+        this.slides[next].scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      updateProgress() {
+        const denominator = Math.max(1, this.slides.length - 1);
+        const progress = (this.currentIndex / denominator) * 100;
+        this.progressBar.style.width = `${progress}%`;
+      }
+
+      updateActiveLink(id) {
+        this.links.forEach((link) => {
+          const target = link.getAttribute("href").replace("#", "");
+          const isActive = target === id;
+          link.classList.toggle("active", isActive);
+          if (isActive) {
+            const section = link.closest("details");
+            if (section) section.open = true;
+          }
+        });
+      }
+    }
+
+    new FeatureMap();
+  </script>
+</body>
+</html>
